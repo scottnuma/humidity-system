@@ -21,34 +21,48 @@ int MIDDLE_THETA = 90;
 // amount of time necessary for servo to move
 int ACTION_DELAY = 300;
 
+// how long to wait before readings
+int READING_DELAY = 2000;
+
 DHT dht(SENSOR_PIN, SENSOR_TYPE);
 Servo servo;
 boolean ventOn;
 
 void setup() {
   dht.begin();
+  // Toggle the vent both ways to ensure the theta constants are correct
+  // as well as ensure ventOn is accurate
   activateVent();
   deactivateVent();
+
+  // Begin serial for debugging purposes
   Serial.begin(9600);
 }
 
 void loop() {
   float threshold = humidityThreshold();
   float humidity = readHumidity();
-  Serial.print("Threshold: ");
-  Serial.println(threshold);
-  Serial.print("Humidity: ");
-  Serial.println(humidity);
+  printState(threshold, humidity);
   if (humidity > threshold && !ventOn) {
     activateVent();
   } else if (humidity < threshold && ventOn) {
     deactivateVent();
   }
-  delay(2000);
+  delay(READING_DELAY);
 }
 
 /**
- * Turn on vent
+ * Print current readings.
+ */
+void printState(float threshold, float humidity) {
+  Serial.print("Threshold: ");
+  Serial.println(threshold);
+  Serial.print("Humidity: ");
+  Serial.println(humidity);
+}
+
+/**
+ * Turn on vent.
  */
 void activateVent() {
   servo.attach(SERVO_PIN);
@@ -73,11 +87,19 @@ void deactivateVent() {
   ventOn = false;
 }
 
+/**
+ * Return the humidityThreshold.
+ *
+ * Can be used to have greater precision in setting the threshold over a
+ * smaller than such as [.5, 1] as an alternative to the raw potentiometer
+ * reading.
+ */
 float humidityThreshold() {
   return readDial();
 }
+
 /**
- * Return a reading from the potentiometer
+ * Return a reading from the potentiometer.
  * 
  * Return value is in [0,1).
  */
@@ -86,7 +108,7 @@ float readDial() {
 }
 
 /**
- * Return the current humidity
+ * Return the current humidity.
  * 
  * Returns a value in [0,1)
  */
@@ -95,7 +117,7 @@ float readHumidity(){
 }
 
 /**
- * Return the current temperatue in Fahrenheit
+ * Return the current temperatue in Fahrenheit.
  */
 float readTemperature(){
   return dht.readTemperature(true);
